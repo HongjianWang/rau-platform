@@ -289,10 +289,10 @@ void enc28j60_isr()
 	        /* a frame has been received */
 	        eth_device_ready((struct eth_device*)&(enc28j60_dev->parent));
 
-			// switch to bank 0
-			enc28j60_set_bank(EIE);
-			// disable rx interrutps
-			spi_write_op(ENC28J60_BIT_FIELD_CLR, EIE, EIE_PKTIE);
+		// switch to bank 0
+		enc28j60_set_bank(EIE);
+		// disable rx interrutps
+		spi_write_op(ENC28J60_BIT_FIELD_CLR, EIE, EIE_PKTIE);
 	    }
 
 		/* clear PKTIF */
@@ -496,56 +496,56 @@ rt_size_t enc28j60_write(rt_device_t dev, rt_off_t pos, const void* buffer, rt_s
  */
 rt_err_t enc28j60_tx( rt_device_t dev, struct pbuf* p)
 {
-	struct pbuf* q;
-	rt_uint32_t len;
-	rt_uint8_t* ptr;
+    struct pbuf* q;
+    rt_uint32_t len;
+    rt_uint8_t* ptr;
     rt_uint32_t level;
 
-	// rt_kprintf("tx pbuf: 0x%08x, total len %d\n", p, p->tot_len);
+    // rt_kprintf("tx pbuf: 0x%08x, total len %d\n", p, p->tot_len);
 
     /* lock enc28j60 */
     rt_sem_take(&lock_sem, RT_WAITING_FOREVER);
     /* disable enc28j60 interrupt */
     level = enc28j60_interrupt_disable();
 
-	// Set the write pointer to start of transmit buffer area
-	spi_write(EWRPTL, TXSTART_INIT&0xFF);
-	spi_write(EWRPTH, TXSTART_INIT>>8);
-	// Set the TXND pointer to correspond to the packet size given
-	spi_write(ETXNDL, (TXSTART_INIT+ p->tot_len + 1)&0xFF);
-	spi_write(ETXNDH, (TXSTART_INIT+ p->tot_len + 1)>>8);
+    // Set the write pointer to start of transmit buffer area
+    spi_write(EWRPTL, TXSTART_INIT&0xFF);
+    spi_write(EWRPTH, TXSTART_INIT>>8);
+    // Set the TXND pointer to correspond to the packet size given
+    spi_write(ETXNDL, (TXSTART_INIT+ p->tot_len + 1)&0xFF);
+    spi_write(ETXNDH, (TXSTART_INIT+ p->tot_len + 1)>>8);
 
-	// write per-packet control byte (0x00 means use macon3 settings)
-	spi_write_op(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
+    // write per-packet control byte (0x00 means use macon3 settings)
+    spi_write_op(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
 
-	for (q = p; q != NULL; q = q->next)
-	{
+    for (q = p; q != NULL; q = q->next)
+    {
         CSACTIVE;
 
-		SPI_I2S_SendData(SPI1, ENC28J60_WRITE_BUF_MEM);
-		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)==SET);
+    	SPI_I2S_SendData(SPI1, ENC28J60_WRITE_BUF_MEM);
+    	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)==SET);
 
-		len = q->len;
-		ptr = q->payload;
+    	len = q->len;
+    	ptr = q->payload;
         while(len)
         {
-			SPI_I2S_SendData(SPI1,*ptr) ;
-			while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)==SET);;
-				ptr++;
+    		SPI_I2S_SendData(SPI1,*ptr) ;
+    		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)==SET);;
+    			ptr++;
 
-			len--;
+    		len--;
         }
 
         CSPASSIVE;
-	}
+    }
 
-	// send the contents of the transmit buffer onto the network
-	spi_write_op(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
-	// Reset the transmit logic problem. See Rev. B4 Silicon Errata point 12.
-	if( (spi_read(EIR) & EIR_TXERIF) )
-	{
-		spi_write_op(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRTS);
-	}
+    // send the contents of the transmit buffer onto the network
+    spi_write_op(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
+    // Reset the transmit logic problem. See Rev. B4 Silicon Errata point 12.
+    if( (spi_read(EIR) & EIR_TXERIF) )
+    {
+    	spi_write_op(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRTS);
+    }
 
     /* enable enc28j60 interrupt */
     enc28j60_interrupt_enable(level);
@@ -642,15 +642,15 @@ struct pbuf *enc28j60_rx(rt_device_t dev)
         // decrement the packet counter indicate we are done with this packet
         spi_write_op(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
     }
-	else
-	{
-		// switch to bank 0
-		enc28j60_set_bank(ECON1);
-		// enable packet reception
-		spi_write_op(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
+    else
+    {
+    	// switch to bank 0
+    	enc28j60_set_bank(ECON1);
+    	// enable packet reception
+    	spi_write_op(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_RXEN);
 
-	    level |= EIE_PKTIE;
-	}
+        level |= EIE_PKTIE;
+    }
 
     /* enable enc28j60 interrupt */
     enc28j60_interrupt_enable(level);
@@ -664,12 +664,8 @@ static void RCC_Configuration(void)
     /* enable spi1 clock */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC  | RCC_APB2Periph_AFIO, ENABLE);
 
-	//
-    /* enable gpiob port clock PC4--enc28j60~{5D~} ~{84N;R}=E~} */
-//    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO, ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC  | RCC_APB2Periph_AFIO, ENABLE);
-//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); //开启USART2时钟
 
 }
 
@@ -677,20 +673,11 @@ static void NVIC_Configuration(void)
 {
     NVIC_InitTypeDef NVIC_InitStructure;
 
-//    /* Enable the EXTI0 Interrupt */
-//    NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
-//    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-//    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-//    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-//    NVIC_Init(&NVIC_InitStructure);
- 	/* Enable the EXTI3 Interrupt  PA3~{Wv~}ENC28J60~{VP6OR}=E~}*/
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI2_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
-
-
 }
 
 static void GPIO_Configuration()
@@ -699,18 +686,18 @@ static void GPIO_Configuration()
     GPIO_InitTypeDef GPIO_InitStructure;
     EXTI_InitTypeDef EXTI_InitStructure;
 
-//	/* configure PB0 as external interrupt */
-//	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
-//  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
-//	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-	/* configure PC4 as external interrupt */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+    /*SPI FLASH 的CS信号初始化*/
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;		    //SPI FLASH CS
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
+    /*由于SPI FLASH与ENC28J60使用了相同的SPI接口，所有置高SPI FLASH的CS信号，不使能SPI FLASH*/
+    GPIO_SetBits(GPIOC, GPIO_Pin_4);	 //SPI CS1
+
+    /*ENC28J60的INT中断输入初始化*/
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;	        
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;   
+    GPIO_Init(GPIOC, &GPIO_InitStructure);		         
 
     /* Configure SPI1 pins:  SCK, MISO and MOSI ----------------------------*/
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
@@ -718,47 +705,22 @@ static void GPIO_Configuration()
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	//~{F,Q!~}VSS PA4
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-//    /* Connect ENC28J60 EXTI Line to GPIOB Pin 0 */
-//    GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource0);
-    /* Connect ENC28J60 EXTI Line to GPIOA Pin 3 */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    GPIO_SetBits(GPIOA, GPIO_Pin_4);    //置高分配给ENC28J60的 SPI1_NSS信号    
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource4);
 
-	/*//~{84N;~}enc28j60 -- PC4
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-*/
-
-/*	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOD, &GPIO_InitStructure);
-
-
-   GPIO_ResetBits(GPIOD,GPIO_Pin_11 );	//使能MBUS
-*/
-
-//    /* Configure ENC28J60 EXTI Line to generate an interrupt on falling edge */
-//    EXTI_InitStructure.EXTI_Line = EXTI_Line0;
-//    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-//    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-//    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-//    EXTI_Init(&EXTI_InitStructure);
-    /* Configure ENC28J60 EXTI Line to generate an interrupt on falling edge */
-    EXTI_InitStructure.EXTI_Line = EXTI_Line4;
+    EXTI_InitStructure.EXTI_Line = EXTI_Line2;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
 
-	/* Clear the Key Button EXTI line pending bit */
-	EXTI_ClearITPendingBit(EXTI_Line4);
+    /* Clear the Key Button EXTI line pending bit */
+    EXTI_ClearITPendingBit(EXTI_Line2);
 }
 
 static void SetupSPI (void)
@@ -779,41 +741,39 @@ static void SetupSPI (void)
 
 void rt_hw_enc28j60_init()
 {
-	/* configuration PB5 as INT */
-	RCC_Configuration();
-	NVIC_Configuration();
-	GPIO_Configuration();
+    /* configuration PB5 as INT */
+    RCC_Configuration();
+    NVIC_Configuration();
+    GPIO_Configuration();
 
-	//enc28j60 ~{VC8_84N;R}=E~} 
-	//GPIO_SetBits(GPIOC ,GPIO_Pin_4);
-	delay_ms(15000);
-   // GPIO_ResetBits(GPIOC ,GPIO_Pin_4);
-	delay_ms(15000);
-//GPIO_SetBits(GPIOC ,GPIO_Pin_4);
-	SetupSPI();
+    delay_ms(15000);
+    // GPIO_ResetBits(GPIOC ,GPIO_Pin_4);
+    delay_ms(15000);
+     //GPIO_SetBits(GPIOC ,GPIO_Pin_4);
+    SetupSPI();
 
-	/* init rt-thread device interface */
-	enc28j60_dev_entry.parent.parent.init		= enc28j60_init;
-	enc28j60_dev_entry.parent.parent.open		= enc28j60_open;
-	enc28j60_dev_entry.parent.parent.close		= enc28j60_close;
-	enc28j60_dev_entry.parent.parent.read		= enc28j60_read;
-	enc28j60_dev_entry.parent.parent.write		= enc28j60_write;
-	enc28j60_dev_entry.parent.parent.control	= enc28j60_control;
-	enc28j60_dev_entry.parent.eth_rx			= enc28j60_rx;
-	enc28j60_dev_entry.parent.eth_tx			= enc28j60_tx;
+    /* init rt-thread device interface */
+    enc28j60_dev_entry.parent.parent.init		= enc28j60_init;
+    enc28j60_dev_entry.parent.parent.open		= enc28j60_open;
+    enc28j60_dev_entry.parent.parent.close		= enc28j60_close;
+    enc28j60_dev_entry.parent.parent.read		= enc28j60_read;
+    enc28j60_dev_entry.parent.parent.write		= enc28j60_write;
+    enc28j60_dev_entry.parent.parent.control	        = enc28j60_control;
+    enc28j60_dev_entry.parent.eth_rx			= enc28j60_rx;
+    enc28j60_dev_entry.parent.eth_tx			= enc28j60_tx;
 
-//{0x32,0x12,0x35,0x11,0x01,0x51};  //MAC~{5XV7~}
+    //{0x32,0x12,0x35,0x11,0x01,0x51};  //MAC~{5XV7~}
 
     enc28j60_dev_entry.dev_addr[0] = 0x00;
-	enc28j60_dev_entry.dev_addr[1] = 0x22;
-	enc28j60_dev_entry.dev_addr[2] = 0x6c;
-	enc28j60_dev_entry.dev_addr[3] = 0x11;
-	enc28j60_dev_entry.dev_addr[4] = 0x56;
-	enc28j60_dev_entry.dev_addr[5] = 0x92;
-	   
-	rt_sem_init(&lock_sem, "lock", 1, RT_IPC_FLAG_FIFO);
+    enc28j60_dev_entry.dev_addr[1] = 0x22;
+    enc28j60_dev_entry.dev_addr[2] = 0x6c;
+    enc28j60_dev_entry.dev_addr[3] = 0x11;
+    enc28j60_dev_entry.dev_addr[4] = 0x56;
+    enc28j60_dev_entry.dev_addr[5] = 0x92;
+       
+    rt_sem_init(&lock_sem, "lock", 1, RT_IPC_FLAG_FIFO);
 
-	eth_device_init(&(enc28j60_dev->parent), "e0");
+    eth_device_init(&(enc28j60_dev->parent), "e0");
 
 }
 
